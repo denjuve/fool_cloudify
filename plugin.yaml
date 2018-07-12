@@ -1,0 +1,90 @@
+##################################################################################
+# Cloudify Docker built in types and plugins definitions.
+# Fool cloudify
+##################################################################################
+
+plugins:
+  docker:
+    executor: host_agent
+    source: https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/master.zip
+# https://github.com/cloudify-cosmo/cloudify-docker-plugin/archive/1.3.2.zip
+    package_name: cloudify-docker-plugin
+    package_version: '1.1'
+# '1.3.2'
+
+node_types:
+
+  cloudify.docker.Container:
+    derived_from: cloudify.nodes.Root
+    properties:
+      image:
+        description: >
+          A dict describing a docker image. To import an image from a tarball
+          use the src key. The value will be an absolute path or URL. If pulling
+          an image from docker hub, do not use src. The key is repository. The value is that
+          repository name. You may additionally specify the tag, if none is given,
+          latest is assumed.
+        default: {}
+      name:
+        description: >
+          The name of the Docker container. This will also be the host name in Docker
+          host config.
+        type: string
+        default: ''
+      use_external_resource:
+        description: Whether the container already exists or not.
+        type: boolean
+        default: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: docker.docker_plugin.tasks.create_container
+          inputs:
+            params:
+              description: >
+                A dictionary of parameters allowed by docker-py to the
+                create_container function.
+              default: {}
+        start:
+          implementation: docker.docker_plugin.tasks.start
+          inputs:
+            params:
+              description: >
+                A dictionary of parameters allowed by docker-py to the
+                start function.
+              default: {}
+            processes_to_wait_for:
+              description: >
+                This is a list of processes to verify are active on the container
+                before completing the start operation. If all processes are not active
+                the function will be retried.
+              default: []
+            retry_interval:
+              description: >
+                Before finishing start checks to see that all processes
+                on the container are ready. This is the interval between
+                checks.
+              type: integer
+              default: 1
+        stop:
+          implementation: docker.docker_plugin.tasks.stop
+          inputs:
+            params:
+              description: >
+                A dictionary of parameters allowed by docker-py to the
+                stop function.
+              default: {}
+            retry_interval:
+              description: >
+                If Exited is not in the container status, then the plugin will retry. This is
+                the number of seconds between retries.
+              type: integer
+              default: 10
+        delete:
+          implementation: docker.docker_plugin.tasks.remove_container
+          inputs:
+            params:
+              description: >
+                A dictionary of parameters allowed by docker-py to the
+                remove_container function.
+              default: {}
